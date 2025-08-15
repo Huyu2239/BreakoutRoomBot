@@ -27,6 +27,8 @@ class StartCog(commands.Cog):
             return await interaction.followup.send("ボイスチャンネルに接続してください。")
         if num < 1:
             return await interaction.followup.send("チャンネル数は1以上で設定してください。")
+        if num > len(interaction.user.voice.channel.members):
+            return await interaction.followup.send("VS参加人数を超えています。")
         self.bot.main_room = interaction.user.voice.channel
         category = interaction.guild.get_channel(CATEGORY_ID)
         channels = [await category.create_voice_channel(name=f"{str(i+1).zfill(3)}") for i in range(num)]
