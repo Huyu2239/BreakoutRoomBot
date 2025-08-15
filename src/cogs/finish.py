@@ -15,22 +15,22 @@ class FinishCog(commands.Cog):
         await interaction.response.defer(thinking=True)
         session = self.bot.room_sessions.get(interaction.guild.id)
         if session is None:
-            return await interaction.followup.send("セッションが開始されていません。", ephemeral=True)
+            return await interaction.followup.send("セッションが開始されていません。")
 
         # 先にメンバー移動
         for room in session.voice_channels:
             for member in room.members:
                 try:
                     await member.move_to(session.main_voice_channel)
-                except Exception as e:
-                    await interaction.followup.send(f"{member.name}の移動に失敗しました: {e}", ephemeral=True)
+                except Exception:
+                    pass
 
         # 次にチャンネル削除
         for room in session.voice_channels:
             try:
                 await room.delete()
-            except Exception as e:
-                await interaction.followup.send(f"{room.name}の削除に失敗しました: {e}", ephemeral=True)
+            except Exception:
+                pass
 
         self.bot.room_sessions.pop(interaction.guild.id)
         await interaction.followup.send("ブレイクアウトルームを終了しました。")

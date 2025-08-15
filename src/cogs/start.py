@@ -20,13 +20,13 @@ class StartCog(commands.Cog):
     async def start(self, interaction: discord.Interaction, num: int):
         await interaction.response.defer(thinking=True)
         if num < 1:
-            return await interaction.followup.send("チャンネル数は1以上で設定してください。", ephemeral=True)
+            return await interaction.followup.send("チャンネル数は1以上で設定してください。")
         if num > len(interaction.user.voice.channel.members):
-            return await interaction.followup.send("部屋数がVC参加人数を超えています。", ephemeral=True)
+            return await interaction.followup.send("部屋数がVC参加人数を超えています。")
         if not interaction.user.voice:
-            return await interaction.followup.send("ボイスチャンネルに接続してください。", ephemeral=True)
+            return await interaction.followup.send("ボイスチャンネルに接続してください。")
         if self.bot.room_sessions.get(interaction.guild.id):
-            return await interaction.followup.send("すでに開始されています。", ephemeral=True)
+            return await interaction.followup.send("すでに開始されています。")
 
         self.bot.room_sessions[interaction.guild.id] = RoomSession(interaction.guild.id, interaction.user.voice.channel, [])
 
@@ -36,7 +36,7 @@ class StartCog(commands.Cog):
             channels = [await category.create_voice_channel(name=f"{str(i+1).zfill(3)}") for i in range(num)]
         except Exception as e:
             logger.error(f"Failed to create voice channels: {e}")
-            return await interaction.followup.send("チャンネルを作成できませんでした。", ephemeral=True)
+            return await interaction.followup.send("チャンネルを作成できませんでした。")
         self.bot.room_sessions[interaction.guild.id].voice_channels = channels
 
         # 無作為にmemberをchannelsに移動。
