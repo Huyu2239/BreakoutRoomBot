@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from config import SERVER_ID, CATEGORY_ID
+from libs.room_session import RoomSession
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,27 +14,30 @@ logger = logging.getLogger(__name__)
 class StartCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.main_room = None
-        self.bot.breakout_rooms = []
 
     @app_commands.command(name="開始", description="ブレイクアウトルームを開始")
-    @app_commands.describe(num="チャンネル数")
-    @app_commands.guilds(discord.Object(id=SERVER_ID))
+    @app_commands.rename(num="チャンネル数")
     async def start(self, interaction: discord.Interaction, num: int):
         await interaction.response.defer(thinking=True)
-        if self.bot.main_room:
-            return await interaction.followup.send("すでに開始されています。")
-        if not interaction.user.voice:
-            return await interaction.followup.send("ボイスチャンネルに接続してください。")
         if num < 1:
-            return await interaction.followup.send("チャンネル数は1以上で設定してください。")
+            return await interaction.followup.send("チャンネル数は1以上で設定してください。", ephemeral=True)
         if num > len(interaction.user.voice.channel.members):
-            return await interaction.followup.send("VS参加人数を超えています。")
-        self.bot.main_room = interaction.user.voice.channel
-        category = interaction.guild.get_channel(CATEGORY_ID)
-        channels = [await category.create_voice_channel(name=f"{str(i+1).zfill(3)}") for i in range(num)]
+            return await interaction.followup.send("部屋数がVC参加人数を超えています。", ephemeral=True)
+        if not interaction.user.voice:
+            return await interaction.followup.send("ボイスチャンネルに接続してください。", ephemeral=True)
+        if self.bot.room_sessions.get(interaction.guild.id):
+            return await interaction.followup.send("すでに開始されています。", ephemeral=True)
+
+        self.bot.room_sessions[interaction.guild.id] = RoomSession(interaction.guild.id, interaction.user.voice.channel, [])
+
+        category = interaction.user.voice.channel.category
         members = interaction.user.voice.channel.members
-        
+        try:
+            channels = [await category.create_voice_channel(name=f"{str(i+1).zfill(3)}") for i in range(num)]
+        except Exception as e:
+            logger.error(f"Failed to create voice channels: {e}")
+            return await interaction.followup.send("チャンネルを作成できませんでした。", ephemeral=True)
+        self.bot.room_sessions[interaction.guild.id].voice_channels = channels
 
         # 無作為にmemberをchannelsに移動。
         random.shuffle(members)
@@ -48,7 +52,6 @@ class StartCog(commands.Cog):
                 if member_index < len(members):
                     await members[member_index].move_to(channel)
                     member_index += 1
-        self.bot.breakout_rooms = channels
         await interaction.followup.send("ブレイクアウトルームを開始しました。")
 
 
