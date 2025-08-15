@@ -3,7 +3,7 @@ import logging
 import discord
 from discord.ext import commands
 
-from config import DISCORD_BOT_TOKEN, SERVER_ID
+from config import DISCORD_BOT_TOKEN, SERVER_ID, CATEGORY_ID
 
 
 class BreakoutRoomBot(commands.Bot):
