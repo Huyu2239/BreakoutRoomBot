@@ -60,39 +60,39 @@ class StartCog(commands.Cog):
                 return await interaction.followup.send("チャンネルの作成に失敗しました。権限を確認してください。")
             
             members = voice_channel_members
-        
-
-        # 無作為にmemberをchannelsに移動。
-        random.shuffle(members)
-        base_members_per_channel = len(members) // num
-        extra_members = len(members) % num
-        member_index = 0
-        failed_moves = []
-        
-        for i, channel in enumerate(channels):
-            members_for_this_channel = base_members_per_channel
-            if i < extra_members:
-                members_for_this_channel += 1
-            for _ in range(members_for_this_channel):
-                if member_index < len(members):
-                    try:
-                        await members[member_index].move_to(channel)
-                    except discord.HTTPException as e:
-                        logger.error(f"Failed to move member {members[member_index].name} to {channel.name}: {e}")
-                        failed_moves.append(members[member_index].name)
-                    except Exception as e:
-                        logger.error(f"Unexpected error moving member {members[member_index].name}: {e}")
-                        failed_moves.append(members[member_index].name)
-                    member_index += 1
-        self.bot.breakout_rooms = channels
-        
-        if failed_moves:
-            await interaction.followup.send(
-                f"ブレイクアウトルームを開始しました。\n"
-                f"⚠️ 以下のメンバーの移動に失敗しました: {', '.join(failed_moves)}"
-            )
-        else:
-            await interaction.followup.send("ブレイクアウトルームを開始しました。")
+            
+            # 無作為にmemberをchannelsに移動。
+            random.shuffle(members)
+            base_members_per_channel = len(members) // num
+            extra_members = len(members) % num
+            member_index = 0
+            failed_moves = []
+            
+            for i, channel in enumerate(channels):
+                members_for_this_channel = base_members_per_channel
+                if i < extra_members:
+                    members_for_this_channel += 1
+                for _ in range(members_for_this_channel):
+                    if member_index < len(members):
+                        try:
+                            await members[member_index].move_to(channel)
+                        except discord.HTTPException as e:
+                            logger.error(f"Failed to move member {members[member_index].name} to {channel.name}: {e}")
+                            failed_moves.append(members[member_index].name)
+                        except Exception as e:
+                            logger.error(f"Unexpected error moving member {members[member_index].name}: {e}")
+                            failed_moves.append(members[member_index].name)
+                        member_index += 1
+            
+            self.bot.breakout_rooms = channels
+            
+            if failed_moves:
+                await interaction.followup.send(
+                    f"ブレイクアウトルームを開始しました。\n"
+                    f"⚠️ 以下のメンバーの移動に失敗しました: {', '.join(failed_moves)}"
+                )
+            else:
+                await interaction.followup.send("ブレイクアウトルームを開始しました。")
 
 
 async def setup(bot):
