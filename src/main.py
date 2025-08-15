@@ -3,7 +3,9 @@ import logging
 import discord
 from discord.ext import commands
 
-from config import DISCORD_BOT_TOKEN, SERVER_ID
+from libs.config import DISCORD_BOT_TOKEN
+from libs.room_session import RoomSession
+
 
 
 class BreakoutRoomBot(commands.Bot):
@@ -13,12 +15,13 @@ class BreakoutRoomBot(commands.Bot):
             intents=discord.Intents.all(),
         )
         self.help_command = None
+        self.room_sessions: dict[int, RoomSession] = {}
 
     async def setup_hook(self):
         await self.load_extension("jishaku")
         for path in glob.glob("cogs/*.py", recursive=True):
             await self.load_extension(path[:-3].replace("/", "."))
-        await self.tree.sync(guild=discord.Object(id=SERVER_ID))
+        await self.tree.sync()
 
     async def on_ready(self):
         logger = logging.getLogger("discord")
