@@ -56,41 +56,6 @@ class BreakoutRoomBot(commands.Bot):
         logger = logging.getLogger("discord")
         logger.info(">> Bot is ready!")
         logger.info(f"Serving {len(self.guilds)} guilds")
-        
-        # 既存のブレイクアウトルームをクリーンアップ
-        await self._cleanup_existing_breakout_rooms()
-    
-    async def _cleanup_existing_breakout_rooms(self):
-        """Bot起動時に残っているブレイクアウトルームをクリーンアップ"""
-        logger = logging.getLogger("discord")
-        total_cleaned = 0
-        
-        for guild in self.guilds:
-            try:
-                session = self.get_guild_session(guild.id)
-                async with session['session_lock']:
-                    # 設定されたカテゴリIDを探す（環境変数やDB設定がある場合）
-                    # ここでは数字のみのチャンネル名を持つボイスチャンネルを対象とする
-                    cleanup_count = 0
-                    for category in guild.categories:
-                        for channel in category.voice_channels:
-                            if channel.name.isdigit() or (len(channel.name) == 3 and channel.name.zfill(3) == channel.name):
-                                try:
-                                    await channel.delete(reason="Bot restart cleanup")
-                                    cleanup_count += 1
-                                    logger.info(f"Cleaned up breakout room: {channel.name} in {guild.name}")
-                                except Exception as e:
-                                    logger.error(f"Failed to cleanup channel {channel.name} in {guild.name}: {e}")
-                    
-                    if cleanup_count > 0:
-                        logger.info(f"Cleaned up {cleanup_count} breakout rooms in {guild.name}")
-                        total_cleaned += cleanup_count
-                        
-            except Exception as e:
-                logger.error(f"Error during cleanup in guild {guild.name}: {e}")
-        
-        if total_cleaned > 0:
-            logger.info(f"Total cleaned up: {total_cleaned} breakout rooms across all guilds")
 
 if __name__ == "__main__":
     bot = BreakoutRoomBot()

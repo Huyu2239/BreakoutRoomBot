@@ -84,6 +84,68 @@ class SetupCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name="cleanup", description="残ったブレイクアウトルームを手動でクリーンアップ")
+    async def cleanup(self, interaction: discord.Interaction):
+        """残ったブレイクアウトルーム（001-999形式）を手動で削除"""
+        await interaction.response.defer(thinking=True)
+        
+        # 権限チェック
+        if not (interaction.user.guild_permissions.manage_channels or 
+               interaction.user.guild_permissions.administrator):
+            return await interaction.followup.send("この操作には「チャンネルの管理」権限が必要です。")
+        
+        session = self.bot.get_guild_session(interaction.guild.id)
+        
+        async with session['session_lock']:
+            # アクティブなセッションがある場合は警告
+            if session['main_room'] or session['breakout_rooms']:
+                return await interaction.followup.send(
+                    "⚠️ アクティブなブレイクアウトセッションがあります。\n"
+                    "先に `/終了` でセッションを終了してからクリーンアップしてください。"
+                )
+            
+            # 設定されたカテゴリがある場合はそこから、なければ全カテゴリから検索
+            categories_to_check = []
+            if session['category_id']:
+                category = interaction.guild.get_channel(session['category_id'])
+                if category:
+                    categories_to_check = [category]
+                else:
+                    return await interaction.followup.send(
+                        "設定されたカテゴリが見つかりません。`/set-category` で再設定してください。"
+                    )
+            else:
+                categories_to_check = interaction.guild.categories
+            
+            cleanup_count = 0
+            failed_deletes = []
+            
+            for category in categories_to_check:
+                for channel in category.voice_channels:
+                    # 001, 002, 003... の3桁ゼロパディング形式のみ削除
+                    if (len(channel.name) == 3 and 
+                        channel.name.isdigit() and 
+                        channel.name.startswith('0')):
+                        try:
+                            await channel.delete(reason=f"Manual cleanup by {interaction.user}")
+                            cleanup_count += 1
+                            logger.info(f"Cleaned up breakout room: {channel.name} in {interaction.guild.name}")
+                        except Exception as e:
+                            logger.error(f"Failed to cleanup channel {channel.name} in {interaction.guild.name}: {e}")
+                            failed_deletes.append(channel.name)
+            
+            # 結果報告
+            message = f"🗑️ クリーンアップ完了: {cleanup_count}個のチャンネルを削除しました。"
+            
+            if failed_deletes:
+                message += f"\n⚠️ 削除に失敗したチャンネル: {', '.join(failed_deletes)}"
+            
+            if cleanup_count == 0 and not failed_deletes:
+                message = "✅ クリーンアップ対象のチャンネルは見つかりませんでした。"
+            
+            await interaction.followup.send(message)
+            logger.info(f"Manual cleanup completed in {interaction.guild.name}: {cleanup_count} channels deleted")
+
 
 async def setup(bot):
     await bot.add_cog(SetupCog(bot))
