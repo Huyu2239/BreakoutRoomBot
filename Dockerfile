@@ -1,4 +1,4 @@
-FROM python:3.12.5-bullseye
+FROM python:3.12.11-bullseye
 
 RUN apt update; apt -y install tzdata && \
 cp /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
