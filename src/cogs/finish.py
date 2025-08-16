@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import discord
 from discord.ext import commands
@@ -18,12 +19,14 @@ class FinishCog(commands.Cog):
             return await interaction.followup.send("セッションが開始されていません。")
 
         # 先にメンバー移動
+        move_tasks = []
         for room in session.voice_channels:
             for member in room.members:
-                try:
-                    await member.move_to(session.main_voice_channel)
-                except Exception:
-                    pass
+                move_tasks.append(member.move_to(session.main_voice_channel))
+        
+        # 一括でメンバー移動を実行
+        if move_tasks:
+            await asyncio.gather(*move_tasks, return_exceptions=True)
 
         # 次にチャンネル削除
         for room in session.voice_channels:

@@ -44,14 +44,19 @@ class StartCog(commands.Cog):
         base_members_per_channel = len(members) // num
         extra_members = len(members) % num
         member_index = 0
+        move_tasks = []
         for i, channel in enumerate(channels):
             members_for_this_channel = base_members_per_channel
             if i < extra_members:
                 members_for_this_channel += 1
             for _ in range(members_for_this_channel):
                 if member_index < len(members):
-                    await members[member_index].move_to(channel)
+                    move_tasks.append(members[member_index].move_to(channel))
                     member_index += 1
+        
+        # 一括でメンバー移動を実行
+        if move_tasks:
+            await asyncio.gather(*move_tasks, return_exceptions=True)
         await interaction.followup.send("ブレイクアウトルームを開始しました。")
 
 
